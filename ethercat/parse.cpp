@@ -3,8 +3,9 @@
 #include <fstream>
 #include <math.h>
 #include "tclap/CmdLine.h"
-#include<stdlib.h>
+#include <stdlib.h>
 #include <time.h> 
+
 std::vector<std:: string> split(std:: string str,std:: string pattern)
 {
     std:: string::size_type pos;
@@ -50,7 +51,7 @@ CmdPaser::CmdPaser(int n){
     RECAT* master = NULL;
 
 
-    radius = 150000;
+    radius = 100000;
     circle_x = 300000;
     circle_y = 300000;
     velocity = 1;
@@ -59,6 +60,16 @@ CmdPaser::CmdPaser(int n){
     lastY = 0;
     homeX = false;
     homeY = false;
+
+    uint8_t data = 0;
+    uint8_t ldata = 1;
+    master->write(0, 0x9060, 1, &data, 1);
+    master->write(0, 0x9060, 2, &ldata, 1);
+    master->write(1, 0x9060, 2, &ldata, 1);
+    master->write(2, 0x9060, 2, &ldata, 1);
+    master->write(0, 0x9060, 3, &ldata, 1);
+    master->write(1, 0x9060, 3, &ldata, 1);
+    master->write(2, 0x9060, 3, &ldata, 1);
 }
 CmdPaser::~CmdPaser(){
 }
@@ -408,7 +419,8 @@ void CmdPaser::parse(){
     }
     else if( cmdline.find("sync")==0 ){
         if(this->x_index >= this->cmds.size() || this->y_index >= this->cmds.size()){
-            std::cerr<<"[ERROR]: to run circle, the x and y axis should be specified to right slave"<<std::endl;
+            std::cerr<<"[ERROR]: to run circle, the x and y axis should be specified to right slave"
+                     <<std::endl;
             return;
         }
         repeat_times = 0;
@@ -595,8 +607,6 @@ int CmdPaser::sync(int index){
 
 int CmdPaser::sync_home(int index)
 {
-    
-    
     double deltaW = 0 / 2.0 / 0.001 / 2 / 8;
     deltaW /= (0.005*3.141592653);
     

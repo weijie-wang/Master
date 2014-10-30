@@ -93,13 +93,15 @@ public:
     }
     void seconds ();
     void process (uint8_t * input, uint8_t * output);
-
+/*
     int get_limit(int slave_index, uint8_t& flag);
     int set_limit(int slave_index, uint8_t flag);
     int get_pid(int slave_index, double &p, double& i, double& d);
     int set_pid(int slave_index, double  p, double  i, double  d);
     int save_eeprom(int slave_index);
+*/
 };
+/*
 int Controller::get_limit(int slave_index, uint8_t& flag){
     return this->read(slave_index, 0x9150, 1, &flag, 1);
 }
@@ -118,6 +120,7 @@ int Controller::save_eeprom(int slave_index){
     uint8_t data = 1;
     return this->write(slave_index, 0x9060, 1, &data, 1);
 }
+*/
 
 Controller::Controller(const std::string &mac, int slave_num)
     : RECAT(mac), parser( slave_num ){
@@ -208,7 +211,7 @@ void Controller::process(uint8_t *input, uint8_t *output){
             {
                 motors[index]->_times->data = 5;
                 motors[index]->_target->data = this->parser.sync_home(index);
-                if(this->parser.homeX && this->parser.homeY)
+                if(this->parser.homeX && this->parser.homeY)  // wrong
                     parser.pop(index);
             }
 
