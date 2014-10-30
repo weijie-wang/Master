@@ -61,6 +61,9 @@ CmdPaser::CmdPaser(int n){
     homeX = false;
     homeY = false;
 
+}
+void CmdPaser::setup()
+{
     uint8_t data = 0;
     uint8_t ldata = 1;
     master->write(0, 0x9060, 1, &data, 1);
@@ -71,6 +74,11 @@ CmdPaser::CmdPaser(int n){
     master->write(1, 0x9060, 3, &ldata, 1);
     master->write(2, 0x9060, 3, &ldata, 1);
 }
+void CmdPaser::demo()
+{
+    setup();
+}
+
 CmdPaser::~CmdPaser(){
 }
 void CmdPaser::parse(){
@@ -273,7 +281,7 @@ void CmdPaser::parse(){
         return;
     }
     /* master parameter setup */
-    else if( cmdline.find("set")==0){
+    else if( cmdline.find("set ")==0){
         std::vector<int> selected;
         PARA_BEGIN;
         PARA_MULTI(int, selected, s, false);
@@ -471,6 +479,11 @@ void CmdPaser::parse(){
         this->last_cmds[this->y_index] = y_queue;
         this->cmds_lock.unlock();
         this->last_cmds_lock.unlock();
+        return;
+    }
+    else if(cmdline.find("cfg")==0)
+    {
+        setup();
         return;
     }
     else{

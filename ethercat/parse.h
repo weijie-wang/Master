@@ -94,6 +94,8 @@ public:
     void push(int n, data_t data);
 
     void set_master(RECAT*);
+    void setup();
+    void demo();
 };
 
 #endif
