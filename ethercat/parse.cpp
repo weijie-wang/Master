@@ -68,15 +68,137 @@ void CmdPaser::setup()
     uint8_t ldata = 1;
     master->write(0, 0x9060, 1, &data, 1);
     master->write(0, 0x9060, 2, &ldata, 1);
-    master->write(1, 0x9060, 2, &ldata, 1);
-    master->write(2, 0x9060, 2, &ldata, 1);
     master->write(0, 0x9060, 3, &ldata, 1);
+    master->write(1, 0x9060, 2, &ldata, 1);
     master->write(1, 0x9060, 3, &ldata, 1);
+    master->write(2, 0x9060, 2, &ldata, 1);
     master->write(2, 0x9060, 3, &ldata, 1);
 }
+int  CmdPaser::enable()
+{
+    std::vector< int > wrong_num;
+    this->repeat_times = 0;
+    std::queue< cmd_t > cmd_queue;
+    cmd_queue.push(cmd_t::enable());
+    this->cmds_lock.lock();
+    this->last_cmds_lock.lock();
+    for(int i = 0; i < this->slave_index.size(); i++){
+        this->cmds[ this->slave_index[i] ] = cmd_queue;
+        this->last_cmds[ this->slave_index[i] ] = cmd_queue;
+    }
+    this->last_cmds_lock.unlock();
+    this->cmds_lock.unlock();
+    for(int time_num = 0 ; time_num <=3000 ;time_num++ )
+    {
+        bool flag = true;
+        wrong_num.clear();
+        this->io_datas_lock.lock();
+        for(int i = 0 ; i < this->slave_index.size(); i++){
+            if(this->io_datas[i].empty() )
+                flag = false;
+            else if( (this->io_datas[i].back().status & 0x00001000) == 0){
+                wrong_num.push_back(i);
+                flag = false;
+            }
+        }
+        this->io_datas_lock.unlock();
+        if(flag == true){
+            std::cout<<"[ok]: Enable at time = "<< this->slave_index.size() << time_num<<std::endl;
+            return 0;
+        }
+        usleep(1000);
+
+    }
+    std::cout<<"[ERROR]: Slave ";
+    for(std::vector< int >::iterator m = wrong_num.begin() ; m != wrong_num.end() ; m++ ){
+        std::cout<<*m<<" ";
+    }
+    std::cout<<"can not enable "<<std::endl;
+    return -1;
+}
+int  CmdPaser::disable()
+{
+    std::vector< int > wrong_num;
+    this->repeat_times = 0;
+    std::queue< cmd_t > cmd_queue;
+    cmd_queue.push(cmd_t::disable());
+    this->cmds_lock.lock();
+    this->last_cmds_lock.lock();
+    for(int i = 0; i < this->slave_index.size(); i++){
+        this->cmds[ this->slave_index[i] ] = cmd_queue;
+        this->last_cmds[ this->slave_index[i] ] = cmd_queue;
+    }
+    this->last_cmds_lock.unlock();
+    this->cmds_lock.unlock();
+
+    for(int time_num = 0 ; time_num <=10000 ;time_num++ )
+    {
+        bool flag = true;
+        wrong_num.clear();
+
+        this->io_datas_lock.lock();
+        for(int i = 0 ; i < this->slave_index.size(); i++){
+            if(this->io_datas[i].empty() )
+                flag = false;
+            else if((this->io_datas[i].back().status & 0x00001000) != 0){
+                wrong_num.push_back(i);
+                flag = false;
+            }
+        }
+        this->io_datas_lock.unlock();
+        if(flag == true){
+            std::cout<<"[ok]: Disable"<<std::endl;
+            return 0;
+        }
+        usleep(100);
+    }
+    std::cout<<"[ERROR]: Slave ";
+    for(std::vector< int >::iterator m = wrong_num.begin() ; m != wrong_num.end() ; m++ ){
+        std::cout<<*m<<" ";
+    }
+    std::cout<<"can not disable "<<std::endl;
+    return -1;
+}
+
 void CmdPaser::demo()
 {
-    setup();
+    long long time = 0;
+    while(1)
+    {
+        if(time == 0)
+        {
+            std::queue< cmd_t > x_queue, y_queue;
+            cmd_t cmd;
+            cmd.type = CLOSED_CIRCLE_LOOP;
+            x_queue.push(cmd);
+            cmd.type = OPENED_LOOP;
+            x_queue.push(cmd);
+            y_queue = x_queue;
+
+            this->cmds_lock.lock();
+            this->last_cmds_lock.lock();
+            this->cmds[this->x_index] = x_queue;
+            this->last_cmds[this->x_index] = x_queue;
+            this->cmds[this->y_index] = y_queue;
+            this->last_cmds[this->y_index] = y_queue;
+            this->cmds_lock.unlock();
+            this->last_cmds_lock.unlock();
+        }
+        else if(time == 60000)
+        {
+            std::queue< cmd_t > x_queue, y_queue;
+            this->cmds_lock.lock();
+            this->last_cmds_lock.lock();
+            this->cmds[this->x_index] = x_queue;
+            this->last_cmds[this->x_index] = x_queue;
+            this->cmds[this->y_index] = y_queue;
+            this->last_cmds[this->y_index] = y_queue;
+            this->cmds_lock.unlock();
+            this->last_cmds_lock.unlock();
+        }
+        time ++;
+    }
+
 }
 
 CmdPaser::~CmdPaser(){

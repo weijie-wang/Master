@@ -96,6 +96,8 @@ public:
     void set_master(RECAT*);
     void setup();
     void demo();
+    int  enable();
+    int  disable();
 };
 
 #endif

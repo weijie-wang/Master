@@ -263,7 +263,9 @@ int main(int argc, char** argv){
 
     Controller c("", slave_num);
     c.start(2000);
-    
+    c.parser.enable();
+    c.parser.setup();
+    c.parser.demo(); 
     while(1)
     {
         fprintf(stderr,"RECAT MASTER# ");
