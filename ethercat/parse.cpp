@@ -55,6 +55,24 @@ CmdPaser::CmdPaser(int n){
     circle_x = 300000;
     circle_y = 300000;
     velocity = 1;
+
+
+    Axis_point Setaxis_star_end;
+    for(int i = 0; i < this->slave_index.size(); i++){
+        Setaxis_star_end.start = 0;
+        Setaxis_star_end.end = 0;
+        Setaxis_star_end.Vector = Setaxis_star_end.end - Setaxis_star_end.start;
+        this->line_axis.push_back(Setaxis_star_end);
+    }
+    Setaxis_star_end.start = 0;
+    for(std::vector< int >::iterator m = line_axis.begin() ; m != line_axis.end() ; m++ ){
+        Setaxis_star_end.start += (*m.Vector)^2;
+
+    }
+    Setaxis_star_end.start = (int)sqrt(Setaxis_star_end.start);
+    Setaxis_star_end.end = Setaxis_star_end.Vector = Setaxis_star_end.start;
+    this->line_axis.push_back(Setaxis_star_end);
+
     
     lastX = 0;
     lastY = 0;
@@ -165,7 +183,7 @@ void CmdPaser::demo()
     long long time = 0;
     while(1)
     {
-        if(time == 0)
+        if(time == 3000)
         {
             std::queue< cmd_t > x_queue, y_queue;
             cmd_t cmd;
@@ -184,19 +202,27 @@ void CmdPaser::demo()
             this->cmds_lock.unlock();
             this->last_cmds_lock.unlock();
         }
-        else if(time == 60000)
+        else if(time == 0)
         {
-            std::queue< cmd_t > x_queue, y_queue;
+            cmd_t cmd;
+            std::queue< cmd_t > cmd_queue;
+            cmd.time = 5;
+            cmd.target = 10;
+            cmd_queue.push(cmd);
+
             this->cmds_lock.lock();
             this->last_cmds_lock.lock();
-            this->cmds[this->x_index] = x_queue;
-            this->last_cmds[this->x_index] = x_queue;
-            this->cmds[this->y_index] = y_queue;
-            this->last_cmds[this->y_index] = y_queue;
-            this->cmds_lock.unlock();
+            for(int i = 0; i < this->slave_index.size(); i++){
+               this->cmds[ this->slave_index[i] ] = cmd_queue;
+               this->last_cmds[ this->slave_index[i] ] = cmd_queue;
+            }
             this->last_cmds_lock.unlock();
+            this->cmds_lock.unlock();
         }
+        usleep(1000);
         time ++;
+        if((time % 100) == 0)
+            std::cout<<time<<"ms"<<std::endl;
     }
 
 }
@@ -669,6 +695,25 @@ void CmdPaser::push(int n, data_t data){
 }
 void CmdPaser::set_master(RECAT* t){
     this->master = t;
+}
+
+
+int CmdPaser::line(int index){
+    std::vector<double> Axis_now;
+    double axis_now;
+    Axis_now.clear();
+    this->io_datas_lock.lock();
+    for(int i = 0; i < this->slave_index.size(); i++){
+        axis_now = this->io_datas[i].back().current;
+        Axis_now.push_back(axis_now);
+    }
+    this->io_datas_lock.unlock();
+    for(std::vector< int >::iterator m = line_axis.begin() ; m != line_axis.end() - 1 ; m++ ){
+        *m.start
+
+    }
+
+
 }
 
 int CmdPaser::circle(int index){

@@ -30,6 +30,12 @@ struct data_t{
     unsigned int status;
     signed int   current;
 };
+typedef struct axis_point{
+    int start;
+    int end; 
+    int Vector;
+}Axis_point;
+
 struct cmd_t{
     unsigned int time;
     int target;
@@ -70,6 +76,7 @@ private:
     RECAT* master;
 
     int radius, circle_x, circle_y;
+    std::vector< axis_point > line_axis;
     double velocity;
 public:
     inline double kp(){ return this->_kp; }
@@ -77,6 +84,7 @@ public:
     inline double kd(){ return this->_kd; }
     int circle(int index);
     int sync(int index);
+    int line(int index);
 private:
     int lastX, lastY;
 public:    
