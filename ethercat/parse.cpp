@@ -232,9 +232,9 @@ void CmdPaser::demo()
     }
 
 }
-void demo_line(){
+void CmdPaser::demo_line(){
     line_setstart_now();
-    int end[3] = {40000,40000,40000};
+    int end[3] = {100000,100000,40000};
     line_setend( end );
 
     std::queue< cmd_t > x_queue, y_queue,z_queue;
@@ -725,7 +725,7 @@ void CmdPaser::set_master(RECAT* t){
     this->master = t;
 }
 int CmdPaser::line(int index){
-    velocity = 10000;
+    velocity = 50000;
     double Length;
     std::vector<double> Axis_now;
     double axis_now;
@@ -743,13 +743,13 @@ int CmdPaser::line(int index){
     n = Axis_now.begin() + index;
     m = this->line_axis.begin() + index;
     double x = (velocity / Length) * (*n);
-    if( abs( this->io_datas[index].back().current - (*m).end) <= 4)
-        x = 0;
+    if( abs( this->io_datas[index].back().current - (*m).end) <= 1000)
+        x = ( abs( this->io_datas[index].back().current - (*m).end) / velocity ) * x;
     x = x/20;
     std::vector< int >::iterator l = this->axis_velocity.begin() + index;
-    (*l) = x;
+    (*l) = (int)x;
     Length = 0;
-    for(std::vector< int >::iterator i = this->axis_velocity.begin(); i != this->axis_velocity.end - 1; i++){
+    for(std::vector< int >::iterator i = this->axis_velocity.begin(); i != this->axis_velocity.end() - 1; i++){
         Length += pow((*i) , 2);
     }
     Length = sqrt(Length);
@@ -762,18 +762,18 @@ void CmdPaser::line_print(){
     this->io_datas_lock.lock();
     std::cout<<"Position now: [ ";
     for(int i = 0; i < this->slave_index.size(); i++){
-        std::cout<<this->io_datas[i]<<" ";
+        std::cout<<this->io_datas[i].back().current<<" ";
     }
     std::cout<<"]";
     this->io_datas_lock.unlock();
     std::cout<<"  Destination: [ ";
     for(std::vector< axis_point >::iterator m = this->line_axis.begin(); m != this->line_axis.end() - 1; m++){
-        std::cout<<(*m).Velocity<<" ";
+        std::cout<<(*m).end<<" ";
     }
     std::cout<<"]";
     std::cout<<"  Axis speed: [ ";
     for(std::vector< int >::iterator m = this->axis_velocity.begin(); m != this->axis_velocity.end() - 1; m++){
-        std::cout<<(*m)<<" :";
+        std::cout<<(*m)<<" ";
     }
     std::cout<<*axis_velocity.end()<<" ]"<<std::endl;
 }
