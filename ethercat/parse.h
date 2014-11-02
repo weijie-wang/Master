@@ -11,7 +11,8 @@ enum cmd_type{
     CLOSED_POSITION_LOOP,
     CLOSED_CIRCLE_LOOP,
     CLOSED_SYNC_LOOP,
-    CLOSED_SYNC_HOME
+    CLOSED_SYNC_HOME,
+    CLOSED_LINE_LOOP
 };
 
 #define CMD_TYPE(t, t1, t2)     \
@@ -54,6 +55,7 @@ struct cmd_t{
     }
 };
 
+
 class CmdPaser
 {
 private:
@@ -64,6 +66,7 @@ private:
     std::vector<int> slave_index;
     int x_index;
     int y_index;
+    int z_index;
     int max_data_size;
     BMutex last_cmds_lock;
     std::vector< std::queue<cmd_t> > last_cmds; 
@@ -74,10 +77,11 @@ private:
     double _ki;
     double _kd;
     RECAT* master;
+    double velocity;
 
     int radius, circle_x, circle_y;
     std::vector< axis_point > line_axis;
-    double velocity;
+    std::vector< int > axis_velocity;
 public:
     inline double kp(){ return this->_kp; }
     inline double ki(){ return this->_ki; }
@@ -85,6 +89,11 @@ public:
     int circle(int index);
     int sync(int index);
     int line(int index);
+    int line_setstart(int start[]);
+    int line_setend(int end[]);
+    int line_setstart_now();
+    int line_setend_now();
+    void line_print();
 private:
     int lastX, lastY;
 public:    
@@ -104,6 +113,7 @@ public:
     void set_master(RECAT*);
     void setup();
     void demo();
+    void demo_line();
     int  enable();
     int  disable();
 };

@@ -25,7 +25,6 @@ std::vector<std:: string> split(std:: string str,std:: string pattern)
     }
     return result;
 }
-
 void CmdPaser::trigger_empty(int n){
     if(this->repeat_times <= 0)
         return;
@@ -41,6 +40,7 @@ CmdPaser::CmdPaser(int n){
         slave_index.push_back(i);
     x_index = 0;
     y_index = 1;
+    z_index = 2;
     max_data_size = 100;
     
     repeat_times = 0;
@@ -58,22 +58,29 @@ CmdPaser::CmdPaser(int n){
 
 
     Axis_point Setaxis_star_end;
+    long long Length = 0;
     for(int i = 0; i < this->slave_index.size(); i++){
         Setaxis_star_end.start = 0;
         Setaxis_star_end.end = 0;
         Setaxis_star_end.Vector = Setaxis_star_end.end - Setaxis_star_end.start;
+        Length += pow(Setaxis_star_end.Vector , 2);
         this->line_axis.push_back(Setaxis_star_end);
     }
-    Setaxis_star_end.start = 0;
-    for(std::vector< int >::iterator m = line_axis.begin() ; m != line_axis.end() ; m++ ){
-        Setaxis_star_end.start += (*m.Vector)^2;
-
-    }
-    Setaxis_star_end.start = (int)sqrt(Setaxis_star_end.start);
-    Setaxis_star_end.end = Setaxis_star_end.Vector = Setaxis_star_end.start;
+    Length = sqrt(Length);
+    Setaxis_star_end.end = Setaxis_star_end.Vector = Setaxis_star_end.start = (int)Length;
     this->line_axis.push_back(Setaxis_star_end);
 
-    
+    Length = 0;
+    int velocity_now = 0;
+    for(int i = 0; i < this->slave_index.size(); i++){
+        velocity_now = 0;
+        Length += pow(velocity_now , 2);
+        this->axis_velocity.push_back(velocity_now);
+    }
+    Length = sqrt(Length);
+    this->axis_velocity.push_back(Length);
+
+
     lastX = 0;
     lastY = 0;
     homeX = false;
@@ -177,7 +184,6 @@ int  CmdPaser::disable()
     std::cout<<"can not disable "<<std::endl;
     return -1;
 }
-
 void CmdPaser::demo()
 {
     long long time = 0;
@@ -226,7 +232,29 @@ void CmdPaser::demo()
     }
 
 }
+void demo_line(){
+    line_setstart_now();
+    int end[3] = {40000,40000,40000};
+    line_setend( end );
 
+    std::queue< cmd_t > x_queue, y_queue,z_queue;
+    cmd_t cmd;
+    cmd.type = CLOSED_LINE_LOOP;
+    x_queue.push(cmd);
+    y_queue = x_queue;
+    z_queue = x_queue;
+
+    this->cmds_lock.lock();
+    this->last_cmds_lock.lock();
+    this->cmds[this->x_index] = x_queue;
+    this->last_cmds[this->x_index] = x_queue;
+    this->cmds[this->y_index] = y_queue;
+    this->last_cmds[this->y_index] = y_queue;
+    this->cmds[this->z_index] = z_queue;
+    this->last_cmds[this->z_index] = z_queue;
+    this->cmds_lock.unlock();
+    this->last_cmds_lock.unlock();
+}
 CmdPaser::~CmdPaser(){
 }
 void CmdPaser::parse(){
@@ -696,26 +724,141 @@ void CmdPaser::push(int n, data_t data){
 void CmdPaser::set_master(RECAT* t){
     this->master = t;
 }
-
-
 int CmdPaser::line(int index){
+    velocity = 10000;
+    double Length;
     std::vector<double> Axis_now;
     double axis_now;
-    Axis_now.clear();
+    std::vector< axis_point >::iterator m = this->line_axis.begin();
+    std::vector< double >::iterator n = Axis_now.begin();
     this->io_datas_lock.lock();
     for(int i = 0; i < this->slave_index.size(); i++){
-        axis_now = this->io_datas[i].back().current;
+        axis_now = (*m).Vector- this->io_datas[i].back().current;
+        Length += pow(axis_now , 2);
         Axis_now.push_back(axis_now);
+        m++;
     }
     this->io_datas_lock.unlock();
-    for(std::vector< int >::iterator m = line_axis.begin() ; m != line_axis.end() - 1 ; m++ ){
-        *m.start
-
+    Length = sqrt(Length);
+    n = Axis_now.begin() + index;
+    m = this->line_axis.begin() + index;
+    double x = (velocity / Length) * (*n);
+    if( abs( this->io_datas[index].back().current - (*m).end) <= 4)
+        x = 0;
+    x = x/20;
+    std::vector< int >::iterator l = this->axis_velocity.begin() + index;
+    (*l) = x;
+    Length = 0;
+    for(std::vector< int >::iterator i = this->axis_velocity.begin(); i != this->axis_velocity.end - 1; i++){
+        Length += pow((*i) , 2);
     }
-
+    Length = sqrt(Length);
+    *this->axis_velocity.end() = Length;
+    int x_data = (int)x;
+    return x_data;
 
 }
-
+void CmdPaser::line_print(){
+    this->io_datas_lock.lock();
+    std::cout<<"Position now: [ ";
+    for(int i = 0; i < this->slave_index.size(); i++){
+        std::cout<<this->io_datas[i]<<" ";
+    }
+    std::cout<<"]";
+    this->io_datas_lock.unlock();
+    std::cout<<"  Destination: [ ";
+    for(std::vector< axis_point >::iterator m = this->line_axis.begin(); m != this->line_axis.end() - 1; m++){
+        std::cout<<(*m).Velocity<<" ";
+    }
+    std::cout<<"]";
+    std::cout<<"  Axis speed: [ ";
+    for(std::vector< int >::iterator m = this->axis_velocity.begin(); m != this->axis_velocity.end() - 1; m++){
+        std::cout<<(*m)<<" :";
+    }
+    std::cout<<*axis_velocity.end()<<" ]"<<std::endl;
+}
+int CmdPaser::line_setstart(int start[]){
+    Axis_point Setaxis_star_end;
+    long long Length = 0;
+    std::vector< axis_point >::iterator m = this->line_axis.begin();
+    for(int i = 0; i < this->slave_index.size(); i++){
+        Setaxis_star_end.start = start[i];
+        Setaxis_star_end.Vector = Setaxis_star_end.end - Setaxis_star_end.start;
+        Length += pow(Setaxis_star_end.Vector , 2);
+        (*m) = Setaxis_star_end;
+        m++;
+    }
+    Length = sqrt(Length);
+    Setaxis_star_end.end = Setaxis_star_end.Vector = Setaxis_star_end.start = (int)Length;
+    *this->line_axis.end() = Setaxis_star_end;
+    std::cout<<"[ok] Set start: [";
+    for(std::vector< axis_point >::iterator m = this->line_axis.begin(); m != this->line_axis.end() - 1; m++){
+        std::cout<<(*m).start<<" ";
+    }
+    std::cout<<"]"<<std::endl;
+}
+int CmdPaser::line_setend(int end[]){
+    Axis_point Setaxis_star_end;
+    long long Length = 0;
+    std::vector< axis_point >::iterator m = this->line_axis.begin();
+    for(int i = 0; i < this->slave_index.size(); i++){
+        Setaxis_star_end.end = end[i];
+        Setaxis_star_end.Vector = Setaxis_star_end.end - Setaxis_star_end.start;
+        Length += pow(Setaxis_star_end.Vector , 2);
+        (*m) = Setaxis_star_end;
+        m++;
+    }
+    Length = sqrt(Length);
+    Setaxis_star_end.end = Setaxis_star_end.Vector = Setaxis_star_end.start = (int)Length;
+    *this->line_axis.end() = Setaxis_star_end;
+    std::cout<<"[ok] Set end: [";
+    for(std::vector< axis_point >::iterator m = this->line_axis.begin(); m != this->line_axis.end() - 1; m++){
+        std::cout<<(*m).end<<" ";
+    }
+    std::cout<<"]"<<std::endl;
+}
+int CmdPaser::line_setstart_now(){
+    Axis_point Setaxis_star_end;
+    long long Length = 0;
+    this->io_datas_lock.lock();
+    std::vector< axis_point >::iterator m = this->line_axis.begin();
+    for(int i = 0; i < this->slave_index.size(); i++){
+        Setaxis_star_end.start = this->io_datas[i].back().current;
+        Setaxis_star_end.Vector = Setaxis_star_end.end - Setaxis_star_end.start;
+        Length += pow(Setaxis_star_end.Vector , 2);
+        (*m) = Setaxis_star_end;
+        m++;
+    }
+    this->io_datas_lock.unlock();
+    Length = sqrt(Length);
+    Setaxis_star_end.end = Setaxis_star_end.Vector = Setaxis_star_end.start = (int)Length;
+    *this->line_axis.end() = Setaxis_star_end;
+    std::cout<<"[ok] Set start: [";
+    for(std::vector< axis_point >::iterator m = this->line_axis.begin(); m != this->line_axis.end() - 1; m++){
+        std::cout<<(*m).start<<" ";
+    }
+    std::cout<<"]"<<std::endl;
+}
+int CmdPaser::line_setend_now(){
+    Axis_point Setaxis_star_end;
+    long long Length = 0;
+    std::vector< axis_point >::iterator m = this->line_axis.begin();
+    for(int i = 0; i < this->slave_index.size(); i++){
+        Setaxis_star_end.end = this->io_datas[i].back().current ;
+        Setaxis_star_end.Vector = Setaxis_star_end.end - Setaxis_star_end.start;
+        Length += pow(Setaxis_star_end.Vector , 2);
+        (*m) = Setaxis_star_end;
+        m++;
+    }
+    Length = sqrt(Length);
+    Setaxis_star_end.end = Setaxis_star_end.Vector = Setaxis_star_end.start = (int)Length;
+    *this->line_axis.end() = Setaxis_star_end;
+    std::cout<<"[ok] Set end: [";
+    for(std::vector< axis_point >::iterator m = this->line_axis.begin(); m != this->line_axis.end() - 1; m++){
+        std::cout<<(*m).end<<" ";
+    }
+    std::cout<<"]"<<std::endl;
+}
 int CmdPaser::circle(int index){
     double x = this->io_datas[x_index].back().current - this->circle_x;
     double y = this->io_datas[y_index].back().current - this->circle_y;
@@ -784,7 +927,6 @@ int CmdPaser::sync(int index){
     else
         return 0;
 }
-
 int CmdPaser::sync_home(int index)
 {
     double deltaW = 0 / 2.0 / 0.001 / 2 / 8;

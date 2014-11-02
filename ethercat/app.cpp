@@ -201,6 +201,10 @@ void Controller::process(uint8_t *input, uint8_t *output){
                 motors[index]->_target->data = this->parser.circle(index);
                 //parser.pop(index);
             }
+            else if(cmd.type == CLOSED_LINE_LOOP){
+                motors[index]->_times->data = 5;
+                motors[index]->_target->data = this->parser.line(index);
+            }
             else if(cmd.type == CLOSED_SYNC_LOOP)
             {
                 motors[index]->_times->data = 5;
@@ -265,10 +269,16 @@ int main(int argc, char** argv){
     c.start(2000);
     c.parser.enable();
     c.parser.setup();
-    c.parser.demo(); 
+    usleep(10000);
+    c.parser.demo_line();
+    //c.parser.demo();
+
     while(1)
     {
-        fprintf(stderr,"RECAT MASTER# ");
-        c.parser.parse();
+
+
+        //fprintf(stderr,"RECAT MASTER# ");
+        c.parser.line_print();
+        //c.parser.parse();
     }
 }
