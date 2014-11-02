@@ -55,6 +55,33 @@ struct cmd_t{
     }
 };
 
+enum PaserCMDType{
+    NOP,
+    LINE,
+    CIRCLE
+};
+struct PaserCMD
+{
+    PaserCMDType type;
+    union
+    {
+        struct
+        {
+            int32_t endx;
+            int32_t endy;
+            int32_t endz;
+            uint32_t speed;
+        }line;
+        struct
+        {
+            uint32_t radius;
+            uint32_t speed;
+            int32_t centerx;
+            int32_t centery;
+            int32_t angle;
+        }circle;
+    }para;
+};
 
 class CmdPaser
 {
@@ -67,6 +94,7 @@ private:
     int x_index;
     int y_index;
     int z_index;
+    int speed;
     int max_data_size;
     BMutex last_cmds_lock;
     std::vector< std::queue<cmd_t> > last_cmds; 
@@ -76,13 +104,19 @@ private:
     double _kp;
     double _ki;
     double _kd;
+    int cmd_index;
     RECAT* master;
     double velocity;
 
     int radius, circle_x, circle_y;
     std::vector< axis_point > line_axis;
     std::vector< int > axis_velocity;
+
+    PaserCMD* current_cmd;
+
 public:
+    void SetCMD(PaserCMD& cmd);
+    int WaitCMD();
     inline double kp(){ return this->_kp; }
     inline double ki(){ return this->_ki; }
     inline double kd(){ return this->_kd; }

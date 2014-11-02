@@ -270,15 +270,35 @@ int main(int argc, char** argv){
     c.parser.enable();
     c.parser.setup();
     usleep(10000);
-    c.parser.demo_line();
-    //c.parser.demo();
+    PaserCMD cmd;
 
     while(1)
     {
+        cmd.type = LINE;
+        cmd.para.line.endx = 600000;
+        cmd.para.line.endy = 600000;
+        cmd.para.line.endz = 1000;
+        cmd.para.line.speed = 100000;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
 
+        cmd.type = LINE;
+        cmd.para.line.endx = 10000;
+        cmd.para.line.endy = 200000;
+        cmd.para.line.speed = 100000;
+        cmd.para.line.endz = 0;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+    }
+    //printf("")
+
+    //while(1)
+    //{
+
+        //c.parser.demo_line();
 
         //fprintf(stderr,"RECAT MASTER# ");
         c.parser.line_print();
         //c.parser.parse();
-    }
+   // }
 }

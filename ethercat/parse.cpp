@@ -54,6 +54,8 @@ CmdPaser::CmdPaser(int n){
     radius = 100000;
     circle_x = 300000;
     circle_y = 300000;
+    speed = 100000;
+    cmd_index = 0;
     velocity = 1;
 
 
@@ -232,29 +234,101 @@ void CmdPaser::demo()
     }
 
 }
-void CmdPaser::demo_line(){
-    line_setstart_now();
-    int end[3] = {100000,100000,40000};
-    line_setend( end );
-
+void CmdPaser::SetCMD(PaserCMD& cmd)
+{
     std::queue< cmd_t > x_queue, y_queue,z_queue;
     cmd_t cmd;
-    cmd.type = CLOSED_LINE_LOOP;
-    x_queue.push(cmd);
-    y_queue = x_queue;
-    z_queue = x_queue;
 
-    this->cmds_lock.lock();
-    this->last_cmds_lock.lock();
-    this->cmds[this->x_index] = x_queue;
-    this->last_cmds[this->x_index] = x_queue;
-    this->cmds[this->y_index] = y_queue;
-    this->last_cmds[this->y_index] = y_queue;
-    this->cmds[this->z_index] = z_queue;
-    this->last_cmds[this->z_index] = z_queue;
-    this->cmds_lock.unlock();
-    this->last_cmds_lock.unlock();
+    switch(cmd.type)
+    {
+    case LINE :
+        this->line_setstart_now();
+        int end[3] = {cmd.para.line.endx, cmd.para.line.endy, cmd.para.line.endz};
+        this->line_setend( end );
+        this->current_cmd = &cmd;
+
+
+        cmd.type = CLOSED_LINE_LOOP;
+        x_queue.push(cmd);
+        y_queue = x_queue;
+        z_queue = x_queue;
+
+        this->cmds_lock.lock();
+        this->last_cmds_lock.lock();
+        this->cmds[this->x_index] = x_queue;
+        this->last_cmds[this->x_index] = x_queue;
+        this->cmds[this->y_index] = y_queue;
+        this->last_cmds[this->y_index] = y_queue;
+        this->cmds[this->z_index] = z_queue;
+        this->last_cmds[this->z_index] = z_queue;
+        this->cmds_lock.unlock();
+        this->last_cmds_lock.unlock();
+
+        break;
+    case CIRCLE:
+        this->circle_x = cmd.para.circle.centerx;
+        this->circle_y = cmd.para.circle.centery;
+        this->speed =
+                (cmd.para.circle.angle > 0) ? cmd.para.circle.speed: (-cmd.para.circle.speed);
+        this->radius =  cmd.para.circle.radius;
+
+        cmd.type = CLOSED_CIRCLE_LOOP;
+        x_queue.push(cmd);
+        y_queue = x_queue;
+        this->cmds_lock.lock();
+        this->last_cmds_lock.lock();
+        this->cmds[this->x_index] = x_queue;
+        this->last_cmds[this->x_index] = x_queue;
+        this->cmds[this->y_index] = y_queue;
+        this->last_cmds[this->y_index] = y_queue;
+        this->cmds_lock.unlock();
+        this->last_cmds_lock.unlock();
+        break;
+
+    }
 }
+int CmdPaser::WaitCMD()
+{
+    switch(this->current_cmd->type)
+    {
+    case LINE :
+        bool isCompleted = false;
+        while(!isCompleted)
+        {
+            this->io_datas_lock.lock();
+            isCompleted = (abs(this->io_datas[0].back().current - this->current_cmd->para.line.endx) <= 1000)
+                    && (abs(this->io_datas[1].back().current - this->current_cmd->para.line.endy) <= 1000)
+                    && (abs(this->io_datas[2].back().current - this->current_cmd->para.line.endz) <= 1000);
+            this->io_datas_lock.unlock();
+            usleep(10000);
+        }
+        return 0;
+    case CIRCLE:
+        bool isCompleted = false;
+        this->io_datas_lock.lock();
+        double x = this->io_datas[x_index].back().current - this->circle_x;
+        double y = this->io_datas[y_index].back().current - this->circle_y;
+        this->io_datas_lock.unlock();
+
+        double startAngle = atan2(y,x);
+        while(!isCompleted)
+        {
+            this->io_datas_lock.lock();
+            x = this->io_datas[x_index].back().current - this->circle_x;
+            y = this->io_datas[y_index].back().current - this->circle_y;
+            this->io_datas_lock.unlock();
+            isCompleted = (abs(this->io_datas[0].back().current - this->current_cmd->para.line.endx) <= 1000)
+                    && (abs(this->io_datas[1].back().current - this->current_cmd->para.line.endy) <= 1000)
+                    && (abs(this->io_datas[2].back().current - this->current_cmd->para.line.endz) <= 1000);
+            this->io_datas_lock.unlock();
+            usleep(10000);
+        }
+        return 0;
+    }
+
+    return -1;
+}
+
 CmdPaser::~CmdPaser(){
 }
 void CmdPaser::parse(){
@@ -725,38 +799,43 @@ void CmdPaser::set_master(RECAT* t){
     this->master = t;
 }
 int CmdPaser::line(int index){
-    velocity = 50000;
-    double Length;
+    velocity = this->current_cmd->para.line.speed;
+    double Length = 0;
     std::vector<double> Axis_now;
     double axis_now;
     std::vector< axis_point >::iterator m = this->line_axis.begin();
-    std::vector< double >::iterator n = Axis_now.begin();
+    ;
     this->io_datas_lock.lock();
     for(int i = 0; i < this->slave_index.size(); i++){
-        axis_now = (*m).Vector- this->io_datas[i].back().current;
+        axis_now = (*m).end - this->io_datas[i].back().current;
         Length += pow(axis_now , 2);
         Axis_now.push_back(axis_now);
         m++;
     }
     this->io_datas_lock.unlock();
     Length = sqrt(Length);
-    n = Axis_now.begin() + index;
+
     m = this->line_axis.begin() + index;
-    double x = (velocity / Length) * (*n);
-    if( abs( this->io_datas[index].back().current - (*m).end) <= 1000)
-        x = ( abs( this->io_datas[index].back().current - (*m).end) / velocity ) * x;
-    x = x/20;
+    double output = (velocity / Length) * Axis_now[index];
+    double error = Axis_now[index];
+    if( (abs( error ) <= 100000) && (abs( error ) >= 100))
+    {
+        output = error;
+    }
+    else if ( abs( error ) <= 100 )
+        output = 0;
+    output = output/20;
+
     std::vector< int >::iterator l = this->axis_velocity.begin() + index;
-    (*l) = (int)x;
+    (*l) = (int)output;
     Length = 0;
     for(std::vector< int >::iterator i = this->axis_velocity.begin(); i != this->axis_velocity.end() - 1; i++){
         Length += pow((*i) , 2);
     }
     Length = sqrt(Length);
     *this->axis_velocity.end() = Length;
-    int x_data = (int)x;
-    return x_data;
 
+    return (int)output;
 }
 void CmdPaser::line_print(){
     this->io_datas_lock.lock();
@@ -866,8 +945,8 @@ int CmdPaser::circle(int index){
     double e = hypot(x,y) - this->radius;
     e = e/this->radius;
 
-    double vx = -sin(t + e) * this->radius;
-    double vy = cos(t + e) * this->radius;
+    double vx = -sin(t + e) * this->speed;
+    double vy = cos(t + e) * this->speed;
     if(index == this->x_index){
         return vx/20;
     }
