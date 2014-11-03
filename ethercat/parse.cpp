@@ -987,7 +987,7 @@ int CmdPaser::circle(int index){
     double y = this->io_datas[y_index].back().current - this->circle_y;
     double t = atan2(y,x);
     double e = hypot(x,y) - this->radius;
-    e = 3*e/this->radius;
+    e = (abs(this->speed) /25000)*e/this->radius;
     double vx = 0;
     double vy = 0;
 

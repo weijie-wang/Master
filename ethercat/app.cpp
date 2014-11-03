@@ -314,59 +314,84 @@ int main(int argc, char** argv){
         c.parser.WaitCMD();
 
 
-
-
-/*
-        cmd.type = LINE;
-        cmd.para.line.endx = 600000;
-        cmd.para.line.endy = 0;
-        cmd.para.line.endz = 0;
-        cmd.para.line.speed = 150000;
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-
-        cmd.type = LINE;
-        cmd.para.line.endx = 0;
-        cmd.para.line.endy = 600000;
-        cmd.para.line.endz = 300000;
-        cmd.para.line.speed = 150000;
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-
         cmd.type = LINE;
         cmd.para.line.endx = 300000;
-        cmd.para.line.endy = 450000;
-        cmd.para.line.speed = 150000;
+        cmd.para.line.endy = 0;
         cmd.para.line.endz = 0;
+        cmd.para.line.speed = 100000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
         cmd.type = CIRCLE;
         cmd.para.circle.centerx = 300000;
-        cmd.para.circle.centery = 300000;
+        cmd.para.circle.centery = 150000;
         cmd.para.circle.radius  = 150000;
-        cmd.para.circle.speed = -150000;
-        cmd.para.circle.angle = 6.28;
+        cmd.para.circle.speed = 80000;
+        cmd.para.circle.angle = 6.28 / 2;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+
+        cmd.type = CIRCLE;
+        cmd.para.circle.centerx = 300000;
+        cmd.para.circle.centery = 450000;
+        cmd.para.circle.radius  = 150000;
+        cmd.para.circle.speed = -80000;
+        cmd.para.circle.angle = 6.28 ;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+
+        cmd.type = CIRCLE;
+        cmd.para.circle.centerx = 300000;
+        cmd.para.circle.centery = 150000;
+        cmd.para.circle.radius  = 150000;
+        cmd.para.circle.speed = 80000;
+        cmd.para.circle.angle = 6.28 ;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+
+        cmd.type = CIRCLE;
+        cmd.para.circle.centerx = 300000;
+        cmd.para.circle.centery = 450000;
+        cmd.para.circle.radius  = 150000;
+        cmd.para.circle.speed = -80000;
+        cmd.para.circle.angle = 6.28 ;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+
+        cmd.type = CIRCLE;
+        cmd.para.circle.centerx = 300000;
+        cmd.para.circle.centery = 150000;
+        cmd.para.circle.radius  = 150000;
+        cmd.para.circle.speed = 80000;
+        cmd.para.circle.angle = 6.28 ;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
         cmd.type = LINE;
         cmd.para.line.endx = 0;
         cmd.para.line.endy = 600000;
-        cmd.para.line.endz = 100000;
-        cmd.para.line.speed = 150000;
+        cmd.para.line.endz = 0;
+        cmd.para.line.speed = 100000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
         cmd.type = LINE;
         cmd.para.line.endx = 600000;
         cmd.para.line.endy = 0;
-        cmd.para.line.endz = 100000;
-        cmd.para.line.speed = 150000;
+        cmd.para.line.endz = 0;
+        cmd.para.line.speed = 100000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
-*/
+        cmd.type = LINE;
+        cmd.para.line.endx = 600000;
+        cmd.para.line.endy = 600000;
+        cmd.para.line.endz = 0;
+        cmd.para.line.speed = 100000;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+
+
         cmd.type = LINE;
         cmd.para.line.endx = 100;
         cmd.para.line.endy = 0;
@@ -377,15 +402,5 @@ int main(int argc, char** argv){
         sleep(10);
 
     }
-    //printf("")
 
-    //while(1)
-    //{
-
-        //c.parser.demo_line();
-
-        //fprintf(stderr,"RECAT MASTER# ");
-        c.parser.line_print();
-        //c.parser.parse();
-   // }
 }
