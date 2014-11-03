@@ -12,7 +12,8 @@ enum cmd_type{
     CLOSED_CIRCLE_LOOP,
     CLOSED_SYNC_LOOP,
     CLOSED_SYNC_HOME,
-    CLOSED_LINE_LOOP
+    CLOSED_LINE_LOOP,
+    STOP
 };
 
 #define CMD_TYPE(t, t1, t2)     \

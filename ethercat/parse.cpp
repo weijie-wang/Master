@@ -284,6 +284,8 @@ void CmdPaser::SetCMD(PaserCMD& pcmd)
 }
 int CmdPaser::WaitCMD()
 {
+    std::queue< cmd_t > x_queue, y_queue,z_queue;
+    cmd_t cmd;
     if(this->current_cmd->type == LINE){
         bool isCompleted = false;
         while(!isCompleted)
@@ -295,6 +297,21 @@ int CmdPaser::WaitCMD()
             this->io_datas_lock.unlock();
             usleep(10000);
         }
+        cmd.type = STOP;
+        x_queue.push(cmd);
+        y_queue = x_queue;
+        z_queue = x_queue;
+
+        this->cmds_lock.lock();
+        this->last_cmds_lock.lock();
+        this->cmds[this->x_index] = x_queue;
+        this->last_cmds[this->x_index] = x_queue;
+        this->cmds[this->y_index] = y_queue;
+        this->last_cmds[this->y_index] = y_queue;
+        this->cmds[this->z_index] = z_queue;
+        this->last_cmds[this->z_index] = z_queue;
+        this->cmds_lock.unlock();
+        this->last_cmds_lock.unlock();
         return 0;
     }
     else if(this->current_cmd->type == CIRCLE){
@@ -304,9 +321,11 @@ int CmdPaser::WaitCMD()
         double y = this->io_datas[y_index].back().current - this->circle_y;
         this->io_datas_lock.unlock();
 
-        double targetAngle = atan2(y,x) + this->current_cmd->para.circle.angle;
-        while( targetAngle >  3.1415)targetAngle -= (2*3.1415);
-        while( targetAngle < -3.1415)targetAngle += (2*3.1415);
+        double last = atan2( y, x);
+        double Angle = 0;
+        //double targetAngle = atan2(y,x) + this->current_cmd->para.circle.angle;
+        //while( targetAngle >  3.1415)targetAngle -= (2*3.1415);
+        //while( targetAngle < -3.1415)targetAngle += (2*3.1415);
         while(!isCompleted)
         {
             this->io_datas_lock.lock();
@@ -314,10 +333,40 @@ int CmdPaser::WaitCMD()
             y = this->io_datas[y_index].back().current - this->circle_y;
             this->io_datas_lock.unlock();
             double now = atan2( y, x);
-            isCompleted = (fabs(now - targetAngle) <= 0.1);
+            if( this->speed >= 0 )
+            {
+                if( ( last >= 0 ) && (now <=0) )
+                    Angle += now - last + 2 * 3.1415;
+                else
+                    Angle += now - last;
+            }
+            else if((this->speed < 0) )
+            {
+
+                if( ( last <= 0 ) && (now >=0) )
+                    Angle += last - now + 2 * 3.1415;
+                else
+                    Angle += last - now;
+            }
+
+
+            last = now;
+            isCompleted = (fabs(this->current_cmd->para.circle.angle - Angle) <= 0.1);
             this->io_datas_lock.unlock();
             usleep(10000);
         }
+
+        cmd.type = STOP;
+        x_queue.push(cmd);
+        y_queue = x_queue;
+        this->cmds_lock.lock();
+        this->last_cmds_lock.lock();
+        this->cmds[this->x_index] = x_queue;
+        this->last_cmds[this->x_index] = x_queue;
+        this->cmds[this->y_index] = y_queue;
+        this->last_cmds[this->y_index] = y_queue;
+        this->cmds_lock.unlock();
+        this->last_cmds_lock.unlock();
         return 0;
     }
 
@@ -813,9 +862,9 @@ int CmdPaser::line(int index){
     m = this->line_axis.begin() + index;
     double output = (velocity / Length) * Axis_now[index];
     double error = Axis_now[index];
-    if( (abs( error ) <= 100000) && (abs( error ) >= 100))
+    if( (abs( error ) <= 150000) && (abs( error ) >= 100))
     {
-        output = error / 4;
+        output = error / 1.5 ;
     }
     else if ( abs( error ) <= 100 )
         output = 0;
@@ -938,10 +987,20 @@ int CmdPaser::circle(int index){
     double y = this->io_datas[y_index].back().current - this->circle_y;
     double t = atan2(y,x);
     double e = hypot(x,y) - this->radius;
-    e = e/this->radius;
+    e = 3*e/this->radius;
+    double vx = 0;
+    double vy = 0;
 
-    double vx = -sin(t + e) * this->speed;
-    double vy = cos(t + e) * this->speed;
+    if(this->speed >= 0)
+    {
+        vx = -sin(t + e) * this->speed;
+        vy = cos(t + e) * this->speed;
+    }
+    else
+    {
+        vx = -sin(t - e) * this->speed;
+        vy = cos(t - e) * this->speed;
+    }
     if(index == this->x_index){
         return vx/20;
     }

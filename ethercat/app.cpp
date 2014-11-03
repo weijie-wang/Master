@@ -218,6 +218,11 @@ void Controller::process(uint8_t *input, uint8_t *output){
                 if(this->parser.homeX && this->parser.homeY)  // wrong
                     parser.pop(index);
             }
+            else if(cmd.type == STOP)
+            {
+                motors[index]->_times->data = 5;
+                motors[index]->_target->data = 0;
+            }
 
             motors[index]->process(input, output);
             
@@ -294,46 +299,34 @@ int main(int argc, char** argv){
         cmd.para.circle.centerx = 300000;
         cmd.para.circle.centery = 300000;
         cmd.para.circle.radius  = 150000;
-        cmd.para.circle.speed = 150000;
-        cmd.para.circle.angle = 3.14;
+        cmd.para.circle.speed = 80000;
+        cmd.para.circle.angle = 6.28 * 5;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
-        c.parser.SetCMD(cmd);
-        c.parser.WaitCMD();
+
+        cmd.type = CIRCLE;
+        cmd.para.circle.centerx = 300000;
+        cmd.para.circle.centery = 300000;
+        cmd.para.circle.radius  = 150000;
+        cmd.para.circle.speed = -80000;
+        cmd.para.circle.angle = 6.28 * 5;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
 
+
+
+/*
         cmd.type = LINE;
         cmd.para.line.endx = 600000;
-        cmd.para.line.endy = 600000;
+        cmd.para.line.endy = 0;
         cmd.para.line.endz = 0;
         cmd.para.line.speed = 150000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
         cmd.type = LINE;
-        cmd.para.line.endx = 600000;
+        cmd.para.line.endx = 0;
         cmd.para.line.endy = 600000;
         cmd.para.line.endz = 300000;
         cmd.para.line.speed = 150000;
@@ -341,10 +334,44 @@ int main(int argc, char** argv){
         c.parser.WaitCMD();
 
         cmd.type = LINE;
+        cmd.para.line.endx = 300000;
+        cmd.para.line.endy = 450000;
+        cmd.para.line.speed = 150000;
+        cmd.para.line.endz = 0;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+
+        cmd.type = CIRCLE;
+        cmd.para.circle.centerx = 300000;
+        cmd.para.circle.centery = 300000;
+        cmd.para.circle.radius  = 150000;
+        cmd.para.circle.speed = -150000;
+        cmd.para.circle.angle = 6.28;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+
+        cmd.type = LINE;
         cmd.para.line.endx = 0;
+        cmd.para.line.endy = 600000;
+        cmd.para.line.endz = 100000;
+        cmd.para.line.speed = 150000;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+
+        cmd.type = LINE;
+        cmd.para.line.endx = 600000;
+        cmd.para.line.endy = 0;
+        cmd.para.line.endz = 100000;
+        cmd.para.line.speed = 150000;
+        c.parser.SetCMD(cmd);
+        c.parser.WaitCMD();
+
+*/
+        cmd.type = LINE;
+        cmd.para.line.endx = 100;
         cmd.para.line.endy = 0;
         cmd.para.line.endz = 0;
-        cmd.para.line.speed = 150000;
+        cmd.para.line.speed = 100000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
         sleep(10);
