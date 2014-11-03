@@ -78,7 +78,7 @@ struct PaserCMD
             uint32_t speed;
             int32_t centerx;
             int32_t centery;
-            int32_t angle;
+            double angle;
         }circle;
     }para;
 };

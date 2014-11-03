@@ -234,19 +234,16 @@ void CmdPaser::demo()
     }
 
 }
-void CmdPaser::SetCMD(PaserCMD& cmd)
+void CmdPaser::SetCMD(PaserCMD& pcmd)
 {
     std::queue< cmd_t > x_queue, y_queue,z_queue;
     cmd_t cmd;
 
-    switch(cmd.type)
-    {
-    case LINE :
+    if(pcmd.type == LINE){
         this->line_setstart_now();
-        int end[3] = {cmd.para.line.endx, cmd.para.line.endy, cmd.para.line.endz};
+        int end[3] = {pcmd.para.line.endx, pcmd.para.line.endy, pcmd.para.line.endz};
         this->line_setend( end );
-        this->current_cmd = &cmd;
-
+        this->current_cmd = &pcmd;
 
         cmd.type = CLOSED_LINE_LOOP;
         x_queue.push(cmd);
@@ -264,13 +261,13 @@ void CmdPaser::SetCMD(PaserCMD& cmd)
         this->cmds_lock.unlock();
         this->last_cmds_lock.unlock();
 
-        break;
-    case CIRCLE:
-        this->circle_x = cmd.para.circle.centerx;
-        this->circle_y = cmd.para.circle.centery;
+    }else if(pcmd.type == CIRCLE){
+        this->circle_x = pcmd.para.circle.centerx;
+        this->circle_y = pcmd.para.circle.centery;
         this->speed =
-                (cmd.para.circle.angle > 0) ? cmd.para.circle.speed: (-cmd.para.circle.speed);
-        this->radius =  cmd.para.circle.radius;
+                (pcmd.para.circle.angle > 0) ? pcmd.para.circle.speed: (-pcmd.para.circle.speed);
+        this->radius =  pcmd.para.circle.radius;
+        this->current_cmd = &pcmd;
 
         cmd.type = CLOSED_CIRCLE_LOOP;
         x_queue.push(cmd);
@@ -283,15 +280,11 @@ void CmdPaser::SetCMD(PaserCMD& cmd)
         this->last_cmds[this->y_index] = y_queue;
         this->cmds_lock.unlock();
         this->last_cmds_lock.unlock();
-        break;
-
     }
 }
 int CmdPaser::WaitCMD()
 {
-    switch(this->current_cmd->type)
-    {
-    case LINE :
+    if(this->current_cmd->type == LINE){
         bool isCompleted = false;
         while(!isCompleted)
         {
@@ -303,23 +296,25 @@ int CmdPaser::WaitCMD()
             usleep(10000);
         }
         return 0;
-    case CIRCLE:
+    }
+    else if(this->current_cmd->type == CIRCLE){
         bool isCompleted = false;
         this->io_datas_lock.lock();
         double x = this->io_datas[x_index].back().current - this->circle_x;
         double y = this->io_datas[y_index].back().current - this->circle_y;
         this->io_datas_lock.unlock();
 
-        double startAngle = atan2(y,x);
+        double targetAngle = atan2(y,x) + this->current_cmd->para.circle.angle;
+        while( targetAngle >  3.1415)targetAngle -= (2*3.1415);
+        while( targetAngle < -3.1415)targetAngle += (2*3.1415);
         while(!isCompleted)
         {
             this->io_datas_lock.lock();
             x = this->io_datas[x_index].back().current - this->circle_x;
             y = this->io_datas[y_index].back().current - this->circle_y;
             this->io_datas_lock.unlock();
-            isCompleted = (abs(this->io_datas[0].back().current - this->current_cmd->para.line.endx) <= 1000)
-                    && (abs(this->io_datas[1].back().current - this->current_cmd->para.line.endy) <= 1000)
-                    && (abs(this->io_datas[2].back().current - this->current_cmd->para.line.endz) <= 1000);
+            double now = atan2( y, x);
+            isCompleted = (fabs(now - targetAngle) <= 0.1);
             this->io_datas_lock.unlock();
             usleep(10000);
         }
@@ -820,7 +815,7 @@ int CmdPaser::line(int index){
     double error = Axis_now[index];
     if( (abs( error ) <= 100000) && (abs( error ) >= 100))
     {
-        output = error;
+        output = error / 4;
     }
     else if ( abs( error ) <= 100 )
         output = 0;
