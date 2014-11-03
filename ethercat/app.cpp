@@ -283,14 +283,14 @@ int main(int argc, char** argv){
         cmd.para.line.endx = 600000;
         cmd.para.line.endy = 600000;
         cmd.para.line.endz = 100000;
-        cmd.para.line.speed = 150000;
+        cmd.para.line.speed = 140000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
         cmd.type = LINE;
         cmd.para.line.endx = 300000;
         cmd.para.line.endy = 450000;
-        cmd.para.line.speed = 150000;
+        cmd.para.line.speed = 140000;
         cmd.para.line.endz = 0;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
@@ -318,7 +318,7 @@ int main(int argc, char** argv){
         cmd.para.line.endx = 300000;
         cmd.para.line.endy = 0;
         cmd.para.line.endz = 0;
-        cmd.para.line.speed = 100000;
+        cmd.para.line.speed = 110000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
@@ -371,7 +371,7 @@ int main(int argc, char** argv){
         cmd.para.line.endx = 0;
         cmd.para.line.endy = 600000;
         cmd.para.line.endz = 0;
-        cmd.para.line.speed = 100000;
+        cmd.para.line.speed = 120000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
@@ -379,7 +379,7 @@ int main(int argc, char** argv){
         cmd.para.line.endx = 600000;
         cmd.para.line.endy = 0;
         cmd.para.line.endz = 0;
-        cmd.para.line.speed = 100000;
+        cmd.para.line.speed = 140000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
 
@@ -396,7 +396,7 @@ int main(int argc, char** argv){
         cmd.para.line.endx = 100;
         cmd.para.line.endy = 0;
         cmd.para.line.endz = 0;
-        cmd.para.line.speed = 100000;
+        cmd.para.line.speed = 140000;
         c.parser.SetCMD(cmd);
         c.parser.WaitCMD();
         sleep(10);

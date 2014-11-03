@@ -291,9 +291,9 @@ int CmdPaser::WaitCMD()
         while(!isCompleted)
         {
             this->io_datas_lock.lock();
-            isCompleted = (abs(this->io_datas[0].back().current - this->current_cmd->para.line.endx) <= 1000)
-                    && (abs(this->io_datas[1].back().current - this->current_cmd->para.line.endy) <= 1000)
-                    && (abs(this->io_datas[2].back().current - this->current_cmd->para.line.endz) <= 1000);
+            isCompleted = (abs(this->io_datas[0].back().current - this->current_cmd->para.line.endx) <= 200)
+                    && (abs(this->io_datas[1].back().current - this->current_cmd->para.line.endy) <= 200)
+                    && (abs(this->io_datas[2].back().current - this->current_cmd->para.line.endz) <= 200);
             this->io_datas_lock.unlock();
             usleep(10000);
         }
@@ -864,7 +864,9 @@ int CmdPaser::line(int index){
     double error = Axis_now[index];
     if( (abs( error ) <= 150000) && (abs( error ) >= 100))
     {
-        output = error / 1.5 ;
+	error = error / 1.5;
+	if( abs(output) >= abs(error) )
+        output = error  ;
     }
     else if ( abs( error ) <= 100 )
         output = 0;
