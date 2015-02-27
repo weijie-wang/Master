@@ -245,13 +245,12 @@ int RECAT::write(uint16_t slave_index, uint16_t index, uint8_t subindex, uint8_t
     ret = ecrt_master_sdo_download(this->master,
                                    slave_index, index, subindex,
                                    (uint8_t*)data,data_size,&abort_code);
-    if(ret)
+    while(ret)
     {
 	ret = ecrt_master_sdo_download(this->master,
                                    slave_index, index, subindex,
                                    (uint8_t*)data,data_size,&abort_code);
         printf("write failed: code = %ld\n",abort_code);
-        return -1;
     }
     return data_size;
 }

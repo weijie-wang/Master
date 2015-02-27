@@ -2,8 +2,6 @@ cmake_minimum_required (VERSION 2.6)
 project (driver)
 SET(CMAKE_BUILD_TYPE Debug)
 
-SET(CMAKE_C_COMPILER /opt/arm-2009q1/bin/arm-none-linux-gnueabi-gcc)
-SET(CMAKE_CXX_COMPILER /opt/arm-2009q1/bin/arm-none-linux-gnueabi-g++)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")

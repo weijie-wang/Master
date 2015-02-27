@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
+#include "tclap/CmdLine.h"
 #include <stdlib.h>
 
 std::vector<std:: string> split(std:: string str,std:: string pattern)

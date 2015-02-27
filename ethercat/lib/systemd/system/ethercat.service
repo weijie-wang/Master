@@ -1,0 +1,15 @@
+#
+# EtherCAT Master Kernel Modules
+#
+
+[Unit]
+Description=EtherCAT Master Kernel Modules
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/recat/ethercat-1.5.2/install/sbin/ethercatctl start
+ExecStop=/home/recat/ethercat-1.5.2/install/sbin/ethercatctl stop
+
+[Install]
+WantedBy=multi-user.target

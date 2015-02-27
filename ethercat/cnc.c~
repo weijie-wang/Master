@@ -1,0 +1,188 @@
+#include "cnc.h"
+#include <iostream>
+#include <fstream>
+#include <math.h>
+#include <stdlib.h>
+
+#define RECAT_DEBUG_ERROR_DATAGRAM
+
+#ifdef RECAT_DEBUG_ERROR_DATAGRAM
+#include <stdarg.h>
+#endif
+
+/* error printing */
+ #ifdef RECAT_DEBUG_ERROR_DATAGRAM
+ void recatpm_err_print (const char *fmt, ...) __attribute__((format(printf,1,2))) {
+	va_list args;
+	
+    va_start(args, fmt);
+	printf("[CNC_Error]: ");
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+ }
+ #endif /* RECAT_DEBUG_ERROR_DATAGRAM */
+
+CNC::CNC(int n) {
+	//resize vector size
+	cmds.resize(n);
+	slave_data.resize(n);
+	last_slave_data.resize(n);
+	slave_index.resize(n);
+	error = SUCCESS;
+	//map motor number to axis number
+	for(int i = 0; i < n; i++)
+		slave_index.push_back(i);
+	
+	master = NULL;
+}
+
+CNC::~CNC() {
+	
+}
+
+int CNC::front(int n, CmdData* cmd) {
+	this->axis_cmds_lock.lock();
+	if(n < 0 || n > this->axis_cmds.size() || this->axis_cmds[n].empty() ){
+        this->slave_data_lock.lock();
+		(*cmd).time = this->slave_data[n].time;
+		(*cmd).target = this->slave_data[n].target;
+        this->slave_data_lock.unlock();
+    }
+    else{
+        (*cmd) = this->axis_cmds[n].front();
+    }
+    this->axis_cmds_lock.unlock();
+    return this->error = SUCCESS;
+}
+
+int CNC::set_cmd(Cmd& cmd) {
+	switch(cmd.type) {
+	case ENABLE:
+		this->cmds_lock.lock();
+		this->cmds.push(cmd);
+		this->cmds_lock.unlock();
+	
+		CmdData cmd_data;
+		cmd_data.enable();
+		this->axis_cmds_lock.lock();
+		for(int i = 0; i < this->slave_index.size(); i++) {
+			this->axis_cmds[i].push(cmd_data);
+		}
+		this->axis_cmds_lock.unlock();
+		return this->error = SUCCESS;
+		
+	case DISABLE:
+		this->cmds_lock.lock();
+		this->cmds.push(cmd);
+		this->cmds_lock.unlock();
+	
+		CmdData cmd_data;
+		cmd_data.disable();
+		this->axis_cmds_lock.lock();
+		for(int i = 0; i < this->slave_index.size(); i++) {
+			this->axis_cmds[i].push(cmd_data);
+		}
+		this->axis_cmds_lock.unlock();
+		return this->error = SUCCESS;
+		
+	case POINT:
+		
+	default:
+#ifdef RECAT_DEBUG_ERROR_DATAGRAM
+		recatpm_err_print("set_cmd(): no cmd is set! \n");
+#endif
+		break;
+	}
+}
+
+int CNC::wait_cmd() {
+	Cmd cmd = this->cmds.front();
+	switch(cmd.type) {
+	case ENABLE:
+		if(cmd.curve.enable.repeat_times == 0)
+		{
+			std::vector< int > wrong_num;
+			for(int i = 0; i < this->slave_index.size(); i++)
+			{
+				if((this->slave_data[i].status & 0x00001000) == 0)
+				{
+					wrong_num.push_back(i);
+				}
+			}
+			std::cout<<"[ERROR]: Slave ";
+			for(std::vector< int >::iterator m = wrong_num.begin() ; m != wrong_num.end() ; m++ ){
+				std::cout<<*m<<" ";
+			}
+			std::cout<<"can not enable "<<std::endl;
+			return this->error = ENABLE_ERROR;
+		}
+		else{
+			CmdData cmd_data;
+			this->slave_data_lock.lock();
+			this->axis_cmds_lock.lock();
+			bool falg =true;
+			for(int i = 0; i < this->slave_index.size(); i++) {
+				if((this->slave_data[i].status & 0x00001000) == 0)
+				{
+					cmd_data.enable();
+					this->axis_cmds[i].push(cmd_data);
+					flag = false;
+				}
+				else
+				{
+					cmd_data.stop();
+					this->axis_cmds[i].push(cmd_data);
+				}
+					
+			}
+			this->slave_data_lock.unlock();
+			this->axis_cmds_lock.unlock();
+			if(flag === true) {
+				std::cout<<"[ok]: Enable"<<std::endl;
+			}
+			else {
+				this->cmds.front().curve.enable.repeat_times--;
+			}
+			return this->error = SUCCESS;
+		}
+		
+		
+	case DISABLE:
+		this->cmds_lock.lock();
+		this->cmds.push(cmd);
+		this->cmds_lock.unlock();
+	
+		CmdData cmd_data;
+		cmd_data.disable();
+		this->axis_cmds_lock.lock();
+		for(int i = 0; i < this->slave_index.size(); i++) {
+			this->axis_cmds[i].push(cmd_data);
+		}
+		this->axis_cmds_lock.unlock();
+		return this->error = SUCCESS;
+		
+	case POINT:
+		
+	default:
+#ifdef RECAT_DEBUG_ERROR_DATAGRAM
+		recatpm_err_print("set_cmd(): no cmd is set! \n");
+#endif
+		break;
+	}
+}
+
+int CNC::axis_cmds_pop(int n) {
+	
+}
+
+int CNC::set_master(RECAT* t){
+    this->master = t;
+	return this->error = SUCCESS;
+}
+
+int slave_data_push(int index, Data *data){
+    cnc.last_slave_data[index] = slave_data[index];
+			cnc.slave_data[index] = data;
+}
+
+int slave_cmds_pop(int n);

@@ -238,13 +238,6 @@ void* thread(void*) {
 			std::cout<<"status = "<<lenovo.motors[motor_num]->_status->data<<"   ";
 			std::cout<<"current = "<<lenovo.motors[motor_num]->_current->data<<"   "<<std::endl;
 		}
-		else if("speed" == mode)
-		{
-			int temp_speed;
-			std::cin>>temp_speed;
-			speed[motor_num] = temp_speed;
-			
-		}			
 		else
 		{
 			for(int index = 0; index < SLAVE_CNT; index ++)

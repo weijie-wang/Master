@@ -1,0 +1,1 @@
+/opt/arm-2009q1/bin/arm-none-linux-gnueabi-g++   -g    CMakeFiles/app.dir/timer.cpp.o CMakeFiles/app.dir/recat.cpp.o CMakeFiles/app.dir/app.cpp.o CMakeFiles/app.dir/cnc.cpp.o  -o app -rdynamic -L/home/recat/TrixialMachine/ethercat/lib -lrt -lethercat -lmodbus -Wl,-rpath,/home/recat/TrixialMachine/ethercat/lib 

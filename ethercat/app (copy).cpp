@@ -4,21 +4,16 @@
 #include <iostream>
 
 //app Includes
-#include "cnc.hpp"
+#include "cnc.h"
 #include "recat.h"
-#include <string>
 
 //Modbus Inludes
 #include "modbus.h"
 #include "modbus-rtu.h"
 #include "modbus-tcp.h"
 #include "modbus-version.h"
-
-#include <pthread.h>
 using namespace std;
 
-int flag = 0;
-int speed[3];
 #define SLAVE_CNT 3 //slave number
 /** declaration of slave */
 #define __PDO_UNIT__(ret_type, type, name)    \
@@ -82,10 +77,7 @@ void Slave::process(uint8_t *input, uint8_t *output)
 class Controller:public RECAT
 {
 private:
-	
-public: 
-    int send_flag;
-    CNC cnc;
+public:
     std::vector<Slave*> motors;
     Controller(const std::string& mac, int slave_num = 1);
     ~Controller();
@@ -95,14 +87,12 @@ public:
         return motors.size();
     }
 	void seconds ();
-	void process (uint8_t *input, uint8_t *output);
+        void process (uint8_t *input, uint8_t *output);
 };
-Controller lenovo(computer_mac, SLAVE_CNT);
 
 Controller::Controller(const std::string &mac, int slave_num)
-    : RECAT(mac), cnc( slave_num )
+    : RECAT(mac)
 {
-	this->cnc.set_master(this);
     for( int i = 0; i < slave_num; i++)
     {
         Slave* motor = new Slave(i);
@@ -155,116 +145,23 @@ void Controller::seconds()
 
 void Controller::process(uint8_t *input, uint8_t *output)
 {
-    if(flag == 1)	
-		{
-		    for(int index = 0; index < 3; index ++)
-    		    {
-			uint32_t _status = (motors[index]->_status->data) & 0x80;
-			if(_status != 0)
-			{
-				motors[index]->_times->data = 5;
-				motors[index]->_target->data = speed[index];
-			}	
-			_status = (motors[index]->_status->data) & 0x40;
-			if(_status != 0)
-			{
-				motors[index]->_times->data = 5;
-				motors[index]->_target->data = -speed[index];
-			}
-		    }
-		}
-		
+    static unsigned int tick = 0;
     for(int index = 0; index < SLAVE_CNT; index ++)
     {
         if(motors[index] != NULL)
-		{
-			Data data;
-			data.time = motors[index]->_times->data;
-			data.target = motors[index]->_target->data;
-			data.status = motors[index]->_status->data;
-			data.current = motors[index]->_current->data;
-			//std::cout<<data.status<<"   ";
-            		motors[index]->process(input, output);
-		}
-    }
-    //std::cout<<std::endl;	
-}
-
-void* thread(void*) {
-	std::string mode;
-	int motor_num = 0;
-	while(true)
 	{
-		std::cin>>mode;
-		if("enable" == mode)
-		{
-			lenovo.motors[0]->_times->data = 15;
-			lenovo.motors[0]->_target->data = 1;
-			lenovo.motors[1]->_times->data = 15;
-			lenovo.motors[1]->_target->data = 1;
-			lenovo.motors[2]->_times->data = 15;
-			lenovo.motors[2]->_target->data = 1;	
-		}
-		else if("set" == mode)
-		{
-			int times, target;
-			std::cin>>times;
-			std::cin>>target;
-			lenovo.motors[motor_num]->_times->data = times;
-			lenovo.motors[motor_num]->_target->data = target;	
-		}
-		else if("select" == mode)
-		{
-			std::cin>>motor_num;
-			if(motor_num >= SLAVE_CNT || motor_num < 0)
-			{
-				std::cout<<"error;"<<std::endl;
-				motor_num = 0;
-			}
-		}
-		else if("disable" == mode)
-		{
-			lenovo.motors[0]->_times->data = 15;
-			lenovo.motors[0]->_target->data = 0;
-			lenovo.motors[1]->_times->data = 15;
-			lenovo.motors[1]->_target->data = 0;
-			lenovo.motors[2]->_times->data = 15;
-			lenovo.motors[2]->_target->data = 0;	
-		}
-		else if("p" == mode)
-		{
-			std::cout<<"times = "<<lenovo.motors[motor_num]->_times->data<<"   ";
-			std::cout<<"target = "<<lenovo.motors[motor_num]->_target->data<<"   ";
-			std::cout<<"status = "<<lenovo.motors[motor_num]->_status->data<<"   ";
-			std::cout<<"current = "<<lenovo.motors[motor_num]->_current->data<<"   "<<std::endl;
-		}
-		else if("speed" == mode)
-		{
-			int temp_speed;
-			std::cin>>temp_speed;
-			speed[motor_num] = temp_speed;
-			
-		}			
-		else
-		{
-			for(int index = 0; index < SLAVE_CNT; index ++)
-    		    	{
-				lenovo.motors[index]->_times->data = 5;
-				lenovo.motors[index]->_target->data = 0;	
-		    	}
-		}
-		
+
+            motors[index]->process(input, output);
 	}
+    }
+
 }
 
 int main(int argc, char** argv)
 {
-	speed[0] = speed[1] = 800;
-	speed[2] = 800;
 	modbus_t *mb;
     	uint16_t tab_reg[32];
     	uint8_t stop_flag =0;
-	std::string command;
     	printf("1 Link...\r\n");
     	mb = modbus_new_tcp("192.168.1.61", 502);
     	int error = -1;
@@ -278,19 +175,13 @@ int main(int argc, char** argv)
     	modbus_write_bit(mb, 37, 0);
     	tab_reg[0] = tab_reg[1] = tab_reg[2] = tab_reg[3] = 0;
 
-	
+	Controller lenovo(computer_mac, SLAVE_CNT);
 	usleep(1000);
 	lenovo.start();
-	//usleep(5000000);
-	//lenovo.cnc.setup();
-
-	pthread_t id;
-	int ret;
-	ret = pthread_create(&id, NULL, &thread, NULL);
-	if(ret != 0) {
-		std::cout<<"Create pthread error!\n\r"<<std::endl;
-		exit(1);
-	}
+	//lenovo.parser.setup();
+	usleep(1000);
+	//lenovo.parser.enable();
+	PaserCMD cmd;
 	while(true)
 	{
 		if(0 <= modbus_read_registers(mb, 0, 1, tab_reg))
@@ -302,24 +193,9 @@ int main(int argc, char** argv)
 				modbus_write_bit(mb, tab_reg[1], 0);
 				tab_reg[1] = tab_reg[0];
 				if(tab_reg[0]==1){
-					speed[0] += 100;
-				}
-				if(tab_reg[0]==2){
-					speed[0] -= 100;
-				}
-				if(tab_reg[0]==3){
-					speed[1] += 100;
-				}
-				if(tab_reg[0]==4){
-					speed[1] -= 100;
-				}
-				if(tab_reg[0]==5){
-					speed[2] += 100;
-				}
-				if(tab_reg[0]==6){
-					speed[2] -= 100;
-				}
-			std::cout<<speed[0]<<"   "<<speed[1]<<"   "<<speed[2]<<"   "<<std::endl;
+						lenovo.motors[0]->_times->data = 15;
+						lenovo.motors[0]->_target->data = 1;
+					}
 			}
 		}
 		if(0 <= modbus_read_bits(mb, 0, 1, &stop_flag))
@@ -327,40 +203,48 @@ int main(int argc, char** argv)
 	    		tab_reg[2] = stop_flag;
 	    		if(tab_reg[2] != tab_reg[3])
 	    		{
-                                lenovo.send_flag = 1;
 				if(tab_reg[2] == 1)
 				{
 					printf("Start\r\n");
-					
-					lenovo.motors[0]->_times->data = 15;
-					lenovo.motors[0]->_target->data = 1;
-					lenovo.motors[1]->_times->data = 15;
-					lenovo.motors[1]->_target->data = 1;
-					lenovo.motors[2]->_times->data = 15;
-					lenovo.motors[2]->_target->data = 1;
-					usleep(1000000);
-					flag = 1;
-					for(int index = 0; index < SLAVE_CNT; index ++)
-    		    			{
-						lenovo.motors[index]->_times->data = 5;
-						lenovo.motors[index]->_target->data = speed[index];	
-		    			}
-					
+					if(tab_reg[0]==1){
+						lenovo.motors[0]->_times->data = 5;
+						lenovo.motors[0]->_target->data = 2000;
+					}
+					if(tab_reg[0]==2){
+						lenovo.motors[1]->_times->data = 5;
+						lenovo.motors[1]->_target->data = 2000;
+					}
+					if(tab_reg[0]==3){
+						lenovo.motors[2]->_times->data = 5;
+						lenovo.motors[2]->_target->data = 2000;
+					}
 				}
 				else
 				{
 					printf("Stop\r\n");
-					lenovo.motors[0]->_times->data = 15;
-					lenovo.motors[0]->_target->data = 0;
-					lenovo.motors[1]->_times->data = 15;
-					lenovo.motors[1]->_target->data = 0;
-					lenovo.motors[2]->_times->data = 15;
-					lenovo.motors[2]->_target->data = 0;
-					flag = 0;
+					if(tab_reg[0]==1){
+						lenovo.motors[0]->_times->data = 5;
+						lenovo.motors[0]->_target->data = 0;
+					}
 				}
                 		tab_reg[3] = tab_reg[2];	
 	    		}		
 		}
+		if(0 <= modbus_read_bits(mb, 37, 1, &stop_flag))
+		{
+	    		if(stop_flag == 1)
+	    		{
+                		modbus_write_bit(mb, tab_reg[1], 0);
+				system("reboot");
+	    		}		
+		}
+		/*cmd.type = LINE;
+        	cmd.para.line.endx = 300000;
+        	cmd.para.line.endy = 450000;
+        	cmd.para.line.speed = 150000;
+        	cmd.para.line.endz = 0;
+        	lenovo.parser.SetCMD(cmd);
+        	lenovo.parser.WaitCMD();*/
 		
 	}
 	return 0;
